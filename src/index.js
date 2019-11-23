@@ -1,7 +1,7 @@
 import {
   ConfigError,
-  StringifyError,
-  ParseError,
+  SerializeError,
+  DeserializeError,
 } from './errors';
 import {
   isFunction,
@@ -28,16 +28,16 @@ const create = (options = {}) => {
 
   const JSON = options.JSON || glob.JSON;
 
-  const jsonStringify =
-      options.stringify || JSON.stringify || glob.JSON.stringify;
-  if (!isFunction(jsonStringify)) {
-    throw new ConfigError("'stringify' must be provided");
+  const jsonSerialize =
+      options.serialize || JSON.serialize || glob.JSON.serialize;
+  if (!isFunction(jsonSerialize)) {
+    throw new ConfigError("'erialize' must be provided");
   }
 
-  const jsonParse =
-      options.parse || JSON.parse || glob.JSON.parse;
-  if (!isFunction(jsonParse)) {
-    throw new ConfigError("'parse' must be provided");
+  const jsonDeserialize =
+      options.deserialize || JSON.deserialize || glob.JSON.deserialize;
+  if (!isFunction(jsonDeserialize)) {
+    throw new ConfigError("'deserialize' must be provided");
   }
 
   const getPrototypeOf =
@@ -83,33 +83,33 @@ const create = (options = {}) => {
   };
 
 
-  const stringify = (data) => {
+  const serialize = (data) => {
     if (!data) {
-      return jsonStringify(data);
+      return jsonSerialize(data);
     }
     switch (typeof data) {
     case 'boolean':
     case 'number':
     case 'string':
-      return jsonStringify(data);
+      return jsonSerialize(data);
     case 'symbol':
-      throw new StringifyError(`Symbol cannot be serialized. ${data}`);
+      throw new SerializeError(`Symbol cannot be serialized. ${data}`);
     case 'function':
-      throw new StringifyError(`Function cannot be serialized. ${data.displayName || data.name || data}`);
+      throw new SerializeError(`Function cannot be serialized. ${data.displayName || data.name || data}`);
     case 'object':
       const {constructor} = data;
       if (!constructor || constructor === Object) {
-        return stringifyObject(data);
+        return serializeObject(data);
       }
 
       if (Array.isArray(data)) {
-        return stringifyArray(data);
+        return serializeArray(data);
       }
 
       // Custom class objects
       const {name} = constructor;
       if (!isValidClassName(name)) {
-        throw new StringifyError("'name' must be provided to serialize custom class.");
+        throw new SerializeError("'name' must be provided to serialize custom class.");
       }
 
       let json;
@@ -118,26 +118,26 @@ const create = (options = {}) => {
       } else {
         const serialize = getSerialize(constructor);
         if (!serialize) {
-          throw new StringifyError("'class.prototype.serialize' or 'class.serialize' must be provided to serialize custom class.");
+          throw new SerializeError("'class.prototype.serialize' or 'class.serialize' must be provided to serialize custom class.");
         }
         json = serialize(data);
       }
       if (typeof json !== 'string') {
-        throw new StringifyError("'serialize' must return string.");
+        throw new SerializeError("'serialize' must return string.");
       }
 
-      return jsonStringify({
+      return jsonSerialize({
         [CLASS_NAME_KEY]: name,
         p: json,
       });
     default:
-      throw new StringifyError(`Unknown type. ${typeof data}`);
+      throw new SerializeError(`Unknown type. ${typeof data}`);
     }
   };
 
 
-  const stringifyProp = (val, key) => {
-    const valStr = stringify(val);
+  const serializeProp = (val, key) => {
+    const valStr = serialize(val);
     if (valStr) {
       return `"${key}":${valStr}`;
     }
@@ -145,20 +145,20 @@ const create = (options = {}) => {
   };
 
 
-  const stringifyObject = (obj) => {
+  const serializeObject = (obj) => {
     const props = getOwnKeys(obj)
-      .map((key) => stringifyProp(obj[key], key))
+      .map((key) => serializeProp(obj[key], key))
       .filter((x) => x)
       .join();
     return `{${props}}`;
   };
 
 
-  const stringifyArray = (arr) => {
-    const items = arr.map((val) => stringify(val)).filter((x) => x);
+  const serializeArray = (arr) => {
+    const items = arr.map((val) => serialize(val)).filter((x) => x);
     if (items.length !== arr.length) {
       // TODO maybe support it manually.
-      throw new StringifyError("Array cannot contain 'undefined'.");
+      throw new SerializeError("Array cannot contain 'undefined'.");
     }
     return `[${items}]`;
   };
@@ -186,7 +186,7 @@ const create = (options = {}) => {
 
         const Class = context[className] || glob[className];
         if (!Class) {
-          throw new ParseError(`Could not find '${className}' class.`);
+          throw new DerializeError(`Could not find '${className}' class.`);
         }
 
         const deserialize = getDeserialize(Class, className);
@@ -195,7 +195,7 @@ const create = (options = {}) => {
         }
 
         if (!isFunction(Class)) {
-          throw new ParseError(`'serialize' must be provided for '${className}' class.`);
+          throw new DeserializeError(`'serialize' must be provided for '${className}' class.`);
         }
 
         return new Class(json);
@@ -208,15 +208,15 @@ const create = (options = {}) => {
       // Custom class objects
       return data;
     default:
-      throw new ParseError(`Unknown type. ${typeof data}`);
+      throw new DeserializeError(`Unknown type. ${typeof data}`);
     }
   };
 
-  const parse = (json) => instantiate(jsonParse(json));
+  const deserialize = (json) => instantiate(jsonDeserialize(json));
 
   return {
-    stringify,
-    parse,
+    serialize,
+    deserialize,
     addClass,
     removeClass,
   };
@@ -231,6 +231,6 @@ export {
   defaultSeri as default,
   create,
   ConfigError,
-  StringifyError,
-  ParseError,
+  SerializeError,
+  DeserializeError,
 };
