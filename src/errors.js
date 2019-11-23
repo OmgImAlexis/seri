@@ -1,25 +1,20 @@
-
 class ConfigError extends Error {
 }
 
-
-class SerializeError extends Error {
+class StringifyError extends Error {
 }
 
-
-class DeserializeError extends Error {
+class ParseError extends Error {
 }
-
 
 export {
   ConfigError,
-  SerializeError,
-  DeserializeError,
+  StringifyError,
+  ParseError,
 };
-
 
 export default {
   ConfigError,
-  SerializeError,
-  DeserializeError,
+  StringifyError,
+  ParseError,
 };
