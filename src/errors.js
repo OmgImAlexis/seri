@@ -3,23 +3,23 @@ class ConfigError extends Error {
 }
 
 
-class StringifyError extends Error {
+class SerializeError extends Error {
 }
 
 
-class ParseError extends Error {
+class DeserializeError extends Error {
 }
 
 
 export {
   ConfigError,
-  StringifyError,
-  ParseError,
+  SerializeError,
+  DeserializeError,
 };
 
 
 export default {
   ConfigError,
-  StringifyError,
-  ParseError,
+  SerializeError,
+  DeserializeError,
 };
