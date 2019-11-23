@@ -48,16 +48,16 @@ const create = (options = {}) => {
   }
 
 
-  const getToJSON = ({name, toJSON}) =>
-    toJSON ||
-    context[name] && context[name].toJSON ||
-    glob[name] && glob[name].toJSON;
+  const getSerialize = ({name, serialize}) =>
+    serialize ||
+    context[name] && context[name].serialize ||
+    glob[name] && glob[name].serialize;
 
 
-  const getFromJSON = ({fromJSON}, name) =>
-    fromJSON ||
-    context[name] && context[name].fromJSON ||
-    glob[name] && glob[name].fromJSON;
+  const getDeserialize = ({deserialize}, name) =>
+    deserialize ||
+    context[name] && context[name].deserialize ||
+    glob[name] && glob[name].deserialize;
 
 
   const addClass = (Class, className) => {
@@ -113,17 +113,17 @@ const create = (options = {}) => {
       }
 
       let json;
-      if (data.toJSON) {
-        json = data.toJSON();
+      if (data.serialize) {
+        json = data.serialize();
       } else {
-        const toJSON = getToJSON(constructor);
-        if (!toJSON) {
-          throw new StringifyError("'class.prototype.toJSON' or 'class.toJSON' must be provided to serialize custom class.");
+        const serialize = getSerialize(constructor);
+        if (!serialize) {
+          throw new StringifyError("'class.prototype.serialize' or 'class.serialize' must be provided to serialize custom class.");
         }
-        json = toJSON(data);
+        json = serialize(data);
       }
       if (typeof json !== 'string') {
-        throw new StringifyError("'toJSON' must return string.");
+        throw new StringifyError("'serialize' must return string.");
       }
 
       return jsonStringify({
@@ -189,13 +189,13 @@ const create = (options = {}) => {
           throw new ParseError(`Could not find '${className}' class.`);
         }
 
-        const fromJSON = getFromJSON(Class, className);
-        if (fromJSON) {
-          return fromJSON(json);
+        const deserialize = getDeserialize(Class, className);
+        if (deserialize) {
+          return deserialize(json);
         }
 
         if (!isFunction(Class)) {
-          throw new ParseError(`'toJSON' must be provided for '${className}' class.`);
+          throw new ParseError(`'serialize' must be provided for '${className}' class.`);
         }
 
         return new Class(json);
